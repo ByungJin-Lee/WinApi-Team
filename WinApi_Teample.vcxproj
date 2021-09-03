@@ -21,9 +21,11 @@
   <ItemGroup>
     <ClCompile Include="Commnunication.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Tetris.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Communication.h" />
+    <ClInclude Include="Tetris.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

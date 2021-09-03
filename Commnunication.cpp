@@ -4,6 +4,7 @@ RESULT createServer(unsigned short port)
 {        
     RESULT result;
     SOCKET fd = socket(AF_INET, SOCK_STREAM, 0);
+
     if (fd == INVALID_SOCKET) {
         result.ok = FALSE;
         return result;
@@ -25,19 +26,21 @@ RESULT createServer(unsigned short port)
 RESULT acceptClient(SOCKET socket)
 {
     RESULT result;
+
     if (listen(socket, 5) == -1) {
         result.ok = FALSE;
         return result;
-    }            
+    }   
+
     SOCKET client;
     SOCKADDR_IN clientaddr;
+
     int addlen = sizeof(clientaddr);
-    
     client = accept(socket, (sockaddr*)&clientaddr, &addlen);
+
     result.ok = TRUE;
     result.socket = client;
     result.setting = clientaddr;
-
     return result;
 }
 
@@ -73,6 +76,23 @@ char* getIpFromAddr(char* store, sockaddr_in addr)
 {
     sprintf(store, "%s", inet_ntoa(addr.sin_addr));
     return store;
+}
+
+void registerGetterThread(SOCKET socket, void(*work)(void*))
+{
+    _beginthread(work, 0, (void*)socket);
+}
+
+int initEnviroment()
+{
+    WSADATA wsadata;
+    if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) return 1;
+    return 0;
+}
+
+void exitEnviroment()
+{
+    WSACleanup();
 }
 
 char* getInfoFromAddr(char* store, sockaddr_in addr)

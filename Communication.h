@@ -6,6 +6,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <winsock2.h>
+#include <process.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -41,6 +42,16 @@ RESULT createSocket(sockaddr_in);
 //주소 정보 확인
 char* getInfoFromAddr(char*, sockaddr_in);
 
+//IP 정보 확인
 char* getIpFromAddr(char*, sockaddr_in);
+
+//소켓으로 들어오는 정보 처리 함수 등록
+void registerGetterThread(SOCKET, void (*)(void*));
+
+//WSA 원속 초기화
+int initEnviroment();
+
+//WSA 원속 종료
+void exitEnviroment();
 
 #endif _COMMNI_H_
