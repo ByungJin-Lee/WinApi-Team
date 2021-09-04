@@ -24,12 +24,18 @@
     <ClCompile Include="Tetris.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Form.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Communication.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Tetris.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Form.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

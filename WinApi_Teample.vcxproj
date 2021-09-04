@@ -20,11 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Commnunication.cpp" />
+    <ClCompile Include="Form.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Tetris.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Communication.h" />
+    <ClInclude Include="Form.h" />
     <ClInclude Include="Tetris.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
