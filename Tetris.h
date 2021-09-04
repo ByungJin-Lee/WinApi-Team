@@ -25,77 +25,80 @@ typedef struct tagBLOCK{
 	char color;
 } BLOCK;
 
-typedef struct tagObject {
+typedef struct tagOBJECT {
 	bool isExist;
 	short type;
 	short rot;
 	int posX;
 	int posY;
-} Object;
+} OBJECT;
+
+typedef struct tagTetris {
+	int width;
+	int height;
+	int interval;
+	int end;
+	int score;
+	bool running;
+	bool pause;
+	BLOCK** board;
+	OBJECT* curObj;
+} TETRIS;
+
 
 //게임판 생성
-BLOCK** createBoard(int x, int y);
+TETRIS* createTetris(int x, int y);
 
 //랜덤 객체 불러오기
-short getRandomObj();
+short getRndObj();
 
 //게임판 그리기
-void drawBoardOnText(BLOCK**);
+void drawBoardOnText(TETRIS*);
 
 //객체 그리기
-bool drawObjInBoardOnText(int, int);
+bool drawObjInBoardOnText(TETRIS*, int, int);
 
 //객체 소환
-void summonObj();
+void summonObj(TETRIS*);
 
 //아래 충돌 판정
-bool isCollisionObjToBottom(BLOCK**);
+bool isCollisionObjToBottom(TETRIS*);
 
-bool isCollisionObjInHere(BLOCK**, Object);
+bool isCollisionObjInHere(TETRIS*, OBJECT);
 
 //게임판 제거
-void removeBoard(BLOCK**);
+void removeTetris(TETRIS*);
 
 //현재 상태
-char* viewStatus(char*);
+char* viewStatus(TETRIS* tetris, char*);
 
 //게임 시작
-void startTetris(BLOCK**, int);
+void startTetrisOnText(TETRIS*, int);
 
 //게임 동작 쓰레드
+void workTetrisOnText(void*);
+
 void workTetris(void*);
 
-//동작 상태 결정
-void setRunning(bool);
-
-//현재 동작 상태 확인
-bool isRunning();
-
-//멈춤
-void pauseTetris();
-
-//멈춤해제
-void cancelPause();
-
 //Object 회전 Left Right
-void rotateObj(BLOCK** board, bool);
-
-//갱신 간격
-void setInterval(int interv);
-
-//Object 아래 이동
-void moveObjToBottom();
+void rotateObj(TETRIS* board, bool);
 
 //Object 회전 및 이동 0: left 1: right 2: rotate left 3: rotate right
-void moveObjWithInput(BLOCK**, short type);
+void moveObjWithInput(TETRIS*, short type);
 
 //Object 좌우 이동 true : 좌 right : 우
-void moveObjToLR(BLOCK**, bool);
+void moveObjToLR(TETRIS*, bool);
 
-void objToBlock(BLOCK**);
+void moveObjToBtm(TETRIS*);
 
-void reviewAllLine(BLOCK**);
+void objToBlock(TETRIS*);
 
-void destoryLine(BLOCK**, int);
+void reviewAllLine(TETRIS*);
 
-void pullLine(BLOCK**, int);
+void destoryLine(TETRIS*, int);
+
+void pullLine(TETRIS*, int);
+
+bool checkEnd(TETRIS*);
+
+void startTetris(TETRIS* tetris, void (*)(void*));

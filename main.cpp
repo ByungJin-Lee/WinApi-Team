@@ -15,11 +15,11 @@
 
 int main() {	
 	char msg[256];
-	BLOCK** board = createBoard(8, 10);
+	TETRIS* tetris = createTetris(8, 15);
 
-	printf("INFO - %s\n", viewStatus(msg));
-	startTetris(board, 1000);
-	printf("\nINFO - %s\n", viewStatus(msg));
-	removeBoard(board);
+	printf("INFO - %s\n", viewStatus(tetris, msg));
+	startTetrisOnText(tetris, 500);
+	printf("\nINFO - %s\n", viewStatus(tetris, msg));
+	removeTetris(tetris);
 	return 0;
 }

@@ -1,15 +1,5 @@
 #include "Tetris.h"
 
-int boardX = 0;
-int boardY = 0;
-
-int interval = 1000;
-
-bool running;
-bool pause;
-
-Object currentObj;
-
 BLOCK objects[BLOCK_COUNT][4][4][4] = {
     //│╫╕Ё
     {
@@ -198,137 +188,189 @@ BLOCK objects[BLOCK_COUNT][4][4][4] = {
     },
 };
 
-BLOCK** createBoard(int x, int y)
+TETRIS* createTetris(int x, int y)
 {
-    boardX = x;
-    boardY = y;
+    TETRIS* tetris = (TETRIS*)malloc(sizeof(TETRIS));
 
-    BLOCK** board = (BLOCK**)malloc(y * sizeof(BLOCK*));    
+    tetris->width = x;
+    tetris->height = y;
 
-    if (board != nullptr) {
+    tetris->board = (BLOCK**)malloc(y * sizeof(BLOCK*));
+
+    if (tetris->board != nullptr) {
         for (int i = 0; i < y; i++) {
-            board[i] = (BLOCK*)malloc(x * sizeof(BLOCK));
-            memset(board[i], 0, sizeof(BLOCK) * x);
+            tetris->board[i] = (BLOCK*)malloc(x * sizeof(BLOCK));
+            memset(tetris->board[i], 0, sizeof(BLOCK) * x);
         }
-    }    
+    }        
 
-    srand((unsigned)time(NULL));
-    currentObj.isExist = 0;
-    running = false;
-    pause = false;
+    tetris->curObj = (OBJECT*)malloc(sizeof(OBJECT));
 
-    return board;
+    tetris->curObj->isExist = false;
+    tetris->score = 0;
+    tetris->running = false;
+    tetris->pause = false;
+
+    return tetris;
 }
 
-void removeBoard(BLOCK** board) {
-    for (int i = 0; i < boardY; i++)
-        free(board[i]);
-    free(board);
+void removeTetris(TETRIS* tetris) {
+    for (int i = 0; i < tetris->height; i++)
+        free(tetris->board[i]);
+    free(tetris->board);
+    free(tetris->curObj);
+    free(tetris);
 }
 
-char* viewStatus(char* buffer)
+char* viewStatus(TETRIS* tetris, char* buffer)
 {
-    if (currentObj.isExist)
-        sprintf(buffer, "T bXY %d %d oTRXY %d %d %d %d", boardX, boardY, currentObj.type, currentObj.rot, currentObj.posX, currentObj.posY);
+    if (tetris->curObj->isExist)
+        sprintf(buffer, "T bXY %d %d oTRXY %d %d %d %d", tetris->width, tetris->height, tetris->curObj->type, tetris->curObj->rot, tetris->curObj->posX, tetris->curObj->posY);
     else
-        sprintf(buffer, "F bXY %d %d", boardX, boardY);
+        sprintf(buffer, "F bXY %d %d", tetris->width, tetris->height);
     return buffer;
 }
 
-void startTetris(BLOCK** board, int interval)
+void startTetris(TETRIS* tetris, void (*work)(void*)) {
+    if (tetris->running) return;
+
+    tetris->running = true;
+
+    _beginthread(workTetris, 0, tetris);
+
+    if(work != nullptr)
+        work(tetris);
+}
+
+void workTetris(void* ptr) {
+    TETRIS* tetris = (TETRIS*)ptr;
+
+    srand((unsigned)time(NULL));
+
+    summonObj(tetris);
+
+    while (tetris->running) {
+        if (tetris->pause) continue;
+
+        Sleep(tetris->interval);
+
+        if (!isCollisionObjToBottom(tetris))
+            (tetris->curObj->posY)++;        
+        else {
+            objToBlock(tetris);
+            if (checkEnd(tetris)) {
+                tetris->running = false;
+            }
+            else {
+                reviewAllLine(tetris);
+                summonObj(tetris);
+            }
+        }
+    }
+    _endthread();
+}
+
+void startTetrisOnText(TETRIS* tetris, int interval)
 {
-    if (!running) {
-        running = true;
-        setInterval(interval);
-        _beginthread(workTetris, 0, board);
+    if (!tetris->running) {
+        tetris->running = true;
+        tetris->interval = interval;
+        _beginthread(workTetrisOnText, 0, tetris);
 
         char key;
-        while (running) {
+        while (tetris->running) {
             if (!_kbhit()) continue;
 
             key = _getch();
             switch (key) {
             case 75:
-                moveObjWithInput(board, 0);
+                moveObjWithInput(tetris, 0);
                 break;
             case 77:
-                moveObjWithInput(board, 1);
+                moveObjWithInput(tetris, 1);
                 break;
             case 72:
-                rotateObj(board, true);
+                rotateObj(tetris, true);
+                break;
+            case 80:
+                moveObjToBtm(tetris);
+                break;
             }
+            drawBoardOnText(tetris);
         }
     }
 }
 
-void workTetris(void * _board)
+void workTetrisOnText(void * _tetris)
 {
-    BLOCK** board = (BLOCK**)_board;
-    summonObj();
+    TETRIS* tetris = (TETRIS*)_tetris;
+    summonObj(tetris);
 
-    while (running) {
-        if (pause) continue;
+    while (tetris->running) {
+        if (tetris->pause) continue;
         
-        Sleep(interval);        
-        if (!isCollisionObjToBottom(board)) {
-            moveObjToBottom();
+        Sleep(tetris->interval);        
+        if (!isCollisionObjToBottom(tetris)) {
+            (tetris->curObj->posY)++;
         }
         else {            
-            objToBlock(board);
-            reviewAllLine(board);
-            currentObj.isExist = false;
-            summonObj();
+            objToBlock(tetris);
+            if (checkEnd(tetris)) {
+                tetris->running = false;
+            } else {
+                reviewAllLine(tetris);                
+                summonObj(tetris);
+            }            
         }
-        drawBoardOnText(board);        
+        drawBoardOnText(tetris);
     }
     _endthread();
 }
 
-void moveObjToBottom()
-{
-    currentObj.posY++;
+void moveObjToBtm(TETRIS* tetris) {
+    OBJECT object = *(tetris->curObj);
+    for (int i = 0; i < tetris->height; i++) {
+        object.posY = tetris->curObj->posY + i;
+        if (isCollisionObjInHere(tetris, object)) {
+            tetris->curObj->posY = object.posY - 1;
+            objToBlock(tetris);
+            break;
+        }
+    }
 }
 
-void moveObjWithInput(BLOCK** board, short type)
+void moveObjWithInput(TETRIS* tetris, short type)
 {
-    if (!currentObj.isExist) return;
+    if (!tetris->curObj->isExist) return;
 
     switch (type) {
     case 0:
-        moveObjToLR(board, true);
+        moveObjToLR(tetris, true);
         break;
     case 1:
-        moveObjToLR(board, false);
+        moveObjToLR(tetris, false);
         break;
     case 2:
-        rotateObj(board,false);
+        rotateObj(tetris,false);
         break;
     case 3:
-        rotateObj(board,true);
+        rotateObj(tetris,true);
         break;
     }
 }
 
-void setInterval(int interv)
-{
-    if (interv > 100)
-        interval = interv;
-    else
-        interval = 2000;
-}
-
-short getRandomObj()
+short getRndObj()
 {
     return rand()%BLOCK_COUNT;
 }
 
-void drawBoardOnText(BLOCK** board) {
-    for (int i = 0; i < boardY; i++) {
-        for (int j = 0; j < boardX; j++) {
-            if (board[i][j].isBlock) {
+void drawBoardOnText(TETRIS* tetris) {
+    for (int i = 0; i < tetris->height; i++) {
+        for (int j = 0; j < tetris->width; j++) {
+            if (tetris->board[i][j].isBlock) {
                 printf("бс");
-            }else if (currentObj.isExist) {
-                printf("%s", drawObjInBoardOnText(j, i) ? "бс" : "бр");
+            }else if (tetris->curObj->isExist) {
+                printf("%s", drawObjInBoardOnText(tetris, j, i) ? "бс" : "бр");
             }else {
                 printf("бр");
             }
@@ -337,43 +379,45 @@ void drawBoardOnText(BLOCK** board) {
     }
 }
 
-bool drawObjInBoardOnText(int pX, int pY)
+bool drawObjInBoardOnText(TETRIS* tetris, int pX, int pY)
 {
-    int gapX = pX - currentObj.posX, gapY = pY - currentObj.posY;
+    int gapX = pX - tetris->curObj->posX, gapY = pY - tetris->curObj->posY;
 
     if (gapX < 0 || gapX > 3 || gapY < 0 || gapY > 3) return false;    
 
-    if (objects[currentObj.type][currentObj.rot][gapY][gapX].isBlock) return true;
+    if (objects[tetris->curObj->type][tetris->curObj->rot][gapY][gapX].isBlock) return true;
     
     return false;
 }
 
-void summonObj()
+void summonObj(TETRIS* tetris)
 {
-    if (currentObj.isExist) return;
+    if (tetris->curObj->isExist) return;
 
-    currentObj.isExist = 1;
-    currentObj.posX = boardX / 2 - 2;
-    currentObj.posY = 1;
-    currentObj.type = getRandomObj();  
-    currentObj.rot = 0;
+    tetris->end = 2;
+
+    tetris->curObj->isExist = 1;
+    tetris->curObj->posX = tetris->width / 2 - 2;
+    tetris->curObj->posY = tetris->end - 1;
+    tetris->curObj->type = getRndObj();
+    tetris->curObj->rot = 0;
 }
 
-bool isCollisionObjToBottom(BLOCK** board)
+bool isCollisionObjToBottom(TETRIS* tetris)
 {
-    Object simulateObj = currentObj;
+    OBJECT simulateObj = *(tetris->curObj);
     simulateObj.posY++;
-    return isCollisionObjInHere(board, simulateObj);
+    return isCollisionObjInHere(tetris, simulateObj);
 }
 
-bool isCollisionObjInHere(BLOCK** board, Object object) {        
+bool isCollisionObjInHere(TETRIS* tetris, OBJECT object) {
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {            
             if (objects[object.type][object.rot][i][j].isBlock) {
-                if (i + object.posY >= boardY
-                    || object.posX + j >= boardX
-                    || board[object.posY + i][object.posX + j].isBlock) {                    
+                if (i + object.posY >= tetris->height
+                    || object.posX + j >= tetris->width
+                    || tetris->board[object.posY + i][object.posX + j].isBlock) {                    
                     return true;
                 }                    
             }
@@ -382,88 +426,82 @@ bool isCollisionObjInHere(BLOCK** board, Object object) {
     return false;
 }
 
-void objToBlock(BLOCK** board) {       
+void objToBlock(TETRIS* tetris) {
+    OBJECT* object = tetris->curObj;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            if (objects[currentObj.type][currentObj.rot][i][j].isBlock) {
-                board[i + currentObj.posY][j + currentObj.posX].isBlock = true;                
+            if (objects[object->type][object->rot][i][j].isBlock) {
+                tetris->board[i + object->posY][j + object->posX].isBlock = true;
             }
         }
-    }    
+    }
+    object->isExist = false;
 }
 
-void setRunning(bool value) {
-    running = value;
-}
-
-bool isRunning() {
-    return running;
-}
-
-void pauseTetris() {
-    pause = true;
-}
-
-void cancelPause() {
-    pause = false;
-}
-
-void rotateObj(BLOCK** board, bool right) {
-    Object simulateObj = currentObj;
+void rotateObj(TETRIS* tetris, bool right) {
+    OBJECT simulateObj = *(tetris->curObj);
     if (right) {
-        simulateObj.rot = (simulateObj.rot++) % 4;
-        if (!isCollisionObjInHere(board, simulateObj))
-            currentObj = simulateObj;
+        simulateObj.rot = (simulateObj.rot + 1) % 4;        
+        if (!isCollisionObjInHere(tetris, simulateObj))
+            *(tetris->curObj) = simulateObj;
     }
     else {
         simulateObj.rot--;
         if (simulateObj.rot < 0)
             simulateObj.rot = 3;
-        if (!isCollisionObjInHere(board, simulateObj))
-            currentObj = simulateObj;
+        if (!isCollisionObjInHere(tetris, simulateObj))
+            *(tetris->curObj) = simulateObj;
     }
 }
 
-void moveObjToLR(BLOCK** board, bool direction) {
-    Object simulateObj = currentObj;
-    if (direction && simulateObj.posX > 0) {
+void moveObjToLR(TETRIS* tetris, bool direction) {
+    OBJECT simulateObj = *(tetris->curObj);
+    if (direction) {
         simulateObj.posX--;
-        if (!isCollisionObjInHere(board, simulateObj))
-            currentObj = simulateObj;
+        if (!isCollisionObjInHere(tetris, simulateObj))
+            *(tetris->curObj) = simulateObj;
     }
     else {
         simulateObj.posX++;
-        if (!isCollisionObjInHere(board, simulateObj))
-            currentObj = simulateObj;
+        if (!isCollisionObjInHere(tetris, simulateObj))
+            *(tetris->curObj) = simulateObj;
     }
 }
 
-void reviewAllLine(BLOCK** board) {
+void reviewAllLine(TETRIS* tetris) {
     bool isBlack;
-    for (int i = boardY - 1; i > 0; i--) {
+    for (int i = tetris->height - 1; i > 0; i--) {
         isBlack = false;
-        for (int j = 0; j < boardX; j++) {
-            if (!board[i][j].isBlock)
+        for (int j = 0; j < tetris->width; j++) {
+            if (!tetris->board[i][j].isBlock)
                 isBlack = true;
         }
         if (!isBlack) {
-            destoryLine(board, i);
-            pullLine(board, i);
+            destoryLine(tetris, i);
+            pullLine(tetris, i);
+            tetris->score++;
             i--;
         }            
     }
 }
 
-void destoryLine(BLOCK** board, int line)
+void destoryLine(TETRIS* tetris, int line)
 {
-    for (int j = 0; j < boardX; j++)
-        board[line][j].isBlock = false;
+    for (int j = 0; j < tetris->width; j++)
+        tetris->board[line][j].isBlock = false;
 }
 
-void pullLine(BLOCK** board, int line)
+void pullLine(TETRIS* tetris, int line)
 {
     for (int i = line; i > 0; i--) {
-        for (int j = 0; j < boardX; j++)
-            board[i][j] = board[i - 1][j];
+        for (int j = 0; j < tetris->width; j++)
+            tetris->board[i][j] = tetris->board[i - 1][j];
     }
+}
+
+bool checkEnd(TETRIS* tetris) {
+    for (int i = 0; i < tetris->width; i++)
+        if (tetris->board[tetris->end][i].isBlock)
+            return true;
+    return false;
 }
