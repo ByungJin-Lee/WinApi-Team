@@ -194,6 +194,7 @@ TETRIS* createTetris(int x, int y)
 
     tetris->width = x;
     tetris->height = y;
+    tetris->blockSize = 25;
 
     tetris->board = (BLOCK**)malloc(y * sizeof(BLOCK*));
 
@@ -236,6 +237,8 @@ void startTetris(TETRIS* tetris, void (*work)(void*)) {
 
     tetris->running = true;
 
+    srand((unsigned)time(NULL));
+
     _beginthread(workTetris, 0, tetris);
 
     if(work != nullptr)
@@ -243,9 +246,7 @@ void startTetris(TETRIS* tetris, void (*work)(void*)) {
 }
 
 void workTetris(void* ptr) {
-    TETRIS* tetris = (TETRIS*)ptr;
-
-    srand((unsigned)time(NULL));
+    TETRIS* tetris = (TETRIS*)ptr;    
 
     summonObj(tetris);
 
@@ -359,27 +360,30 @@ void moveObjWithInput(TETRIS* tetris, short type)
     }
 }
 
-short getRndObj()
+char getRndObj()
 {
     return rand()%BLOCK_COUNT;
 }
 
 void drawBoardOnText(TETRIS* tetris) {
     for (int i = 0; i < tetris->height; i++) {
-        for (int j = 0; j < tetris->width; j++) {
-            if (tetris->board[i][j].isBlock) {
-                printf("бс");
-            }else if (tetris->curObj->isExist) {
-                printf("%s", drawObjInBoardOnText(tetris, j, i) ? "бс" : "бр");
-            }else {
-                printf("бр");
-            }
-        }            
+        for (int j = 0; j < tetris->width; j++) 
+            printf("%s", isBlockInHere(tetris, j, i) > -1 ? "бс" : "бр");                 
         printf("\n");
     }
 }
 
-bool drawObjInBoardOnText(TETRIS* tetris, int pX, int pY)
+char isBlockInHere(TETRIS* tetris, int x, int y) {
+    if (tetris->board[y][x].isBlock) {
+        return tetris->board[y][x].color;
+    }
+    else if(tetris->curObj->isExist && isObjBlockInHere(tetris, x, y)) {
+        return tetris->curObj->type;
+    }
+    return -1;
+}
+
+bool isObjBlockInHere(TETRIS* tetris, int pX, int pY)
 {
     int gapX = pX - tetris->curObj->posX, gapY = pY - tetris->curObj->posY;
 
@@ -428,10 +432,13 @@ bool isCollisionObjInHere(TETRIS* tetris, OBJECT object) {
 
 void objToBlock(TETRIS* tetris) {
     OBJECT* object = tetris->curObj;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0, y, x; i < 4; i++) {
+        y = i + object->posY;
         for (int j = 0; j < 4; j++) {
+            x = j + object->posX;
             if (objects[object->type][object->rot][i][j].isBlock) {
-                tetris->board[i + object->posY][j + object->posX].isBlock = true;
+                tetris->board[y][x].isBlock = true;
+                tetris->board[y][x].color = object->type;
             }
         }
     }
@@ -504,4 +511,68 @@ bool checkEnd(TETRIS* tetris) {
         if (tetris->board[tetris->end][i].isBlock)
             return true;
     return false;
+}
+
+//FORM
+
+void drawTetrisOnForm(TETRIS* tetris, HDC hdc)
+{
+    HBRUSH origin, red, orange, yellow, green, purple, blue, skyblue, empty, cur;    
+    const int BLOCK = tetris->blockSize;
+    
+    red = CreateSolidBrush(RGB(255, 0, 0));
+    orange = CreateSolidBrush(RGB(255, 94, 0));
+    yellow = CreateSolidBrush(RGB(255, 228, 0));
+    green = CreateSolidBrush(RGB(0, 255, 0));
+    purple = CreateSolidBrush(RGB(217, 65, 197));
+    blue = CreateSolidBrush(RGB(0, 0, 255));
+    skyblue = CreateSolidBrush(RGB(135, 206, 235));
+    empty = CreateSolidBrush(RGB(255, 255, 255));
+    cur = empty;
+
+    origin = (HBRUSH)SelectObject(hdc, empty);
+
+    for (int i = 0, h = tetris->height; i < h; i++) {
+        for (int j = 0, w = tetris->width; j < w; j++) {
+            switch (isBlockInHere(tetris, j, i)) {
+            case EMPTY:
+                cur = empty;
+                break;
+            case RED:
+                cur = red;
+                break;
+            case ORANGE:
+                cur = orange;
+                break;
+            case YELLOW:
+                cur = yellow;
+                break;
+            case GREEN:
+                cur = green;
+                break;
+            case PURPLE:
+                cur = purple;
+                break;
+            case BLUE:
+                cur = blue;
+                break;
+            case SKYBLUE:
+                cur = skyblue;
+                break;
+            }
+            SelectObject(hdc, cur);
+            Rectangle(hdc, BLOCK * j, BLOCK * i, (j + 1) * BLOCK, (i + 1) * BLOCK);
+        }
+    }
+
+
+    SelectObject(hdc, origin);
+    DeleteObject(red);
+    DeleteObject(orange);
+    DeleteObject(yellow);
+    DeleteObject(green);
+    DeleteObject(purple);
+    DeleteObject(blue);
+    DeleteObject(skyblue);
+    DeleteObject(empty);
 }

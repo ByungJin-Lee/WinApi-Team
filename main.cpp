@@ -1,14 +1,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "Tetris.h"
+#include "Form.h"
 
-int main() {	
-	char msg[256];
-	TETRIS* tetris = createTetris(8, 15);
+LPCTSTR titl = TEXT("TETRIS");
 
-	printf("INFO - %s\n", viewStatus(tetris, msg));
-	startTetrisOnText(tetris, 500);
-	printf("\nINFO - %s\n", viewStatus(tetris, msg));
-	removeTetris(tetris);
-	return 0;
+int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE prevInst, LPSTR lpszCmdParam, int nCmdShow) {
+	HWND hWnd = createDefaultForm(hInst, titl, lpszCmdParam);
+	return windowShowAndLoop(hWnd, nCmdShow);
 }

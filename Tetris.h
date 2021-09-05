@@ -9,10 +9,20 @@
 
 #define BLOCK_COUNT 7
 
+#define RED 0
+#define ORANGE 1
+#define YELLOW 2
+#define GREEN 3
+#define PURPLE 4
+#define BLUE 5
+#define SKYBLUE 6
+#define EMPTY -1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <Windows.h>
 #include <conio.h>
 #include <Windows.h>
 #include <process.h>
@@ -27,13 +37,14 @@ typedef struct tagBLOCK{
 
 typedef struct tagOBJECT {
 	bool isExist;
-	short type;
+	char type;	
 	short rot;
 	int posX;
 	int posY;
 } OBJECT;
 
 typedef struct tagTetris {
+	int blockSize;
 	int width;
 	int height;
 	int interval;
@@ -50,13 +61,13 @@ typedef struct tagTetris {
 TETRIS* createTetris(int x, int y);
 
 //랜덤 객체 불러오기
-short getRndObj();
+char getRndObj();
 
 //게임판 그리기
 void drawBoardOnText(TETRIS*);
 
 //객체 그리기
-bool drawObjInBoardOnText(TETRIS*, int, int);
+bool isObjBlockInHere(TETRIS*, int, int);
 
 //객체 소환
 void summonObj(TETRIS*);
@@ -89,16 +100,28 @@ void moveObjWithInput(TETRIS*, short type);
 //Object 좌우 이동 true : 좌 right : 우
 void moveObjToLR(TETRIS*, bool);
 
+//Object를 바로 아래쪽으로 내림
 void moveObjToBtm(TETRIS*);
 
+//Object를 블럭으로 만듦
 void objToBlock(TETRIS*);
 
+//모든 줄을 검토함
 void reviewAllLine(TETRIS*);
 
+//해당 줄을 삭제함
 void destoryLine(TETRIS*, int);
 
+//해당 줄 위를 아래로 땡김
 void pullLine(TETRIS*, int);
 
+//종료 조건을 판단함
 bool checkEnd(TETRIS*);
 
+//테트리스를 시작함
 void startTetris(TETRIS* tetris, void (*)(void*));
+
+void drawTetrisOnForm(TETRIS* tetris, HDC hdc);
+
+//블록이 있는지 판단, 있다면 색상 반환, 없으면 -1
+char isBlockInHere(TETRIS* tetris, int x, int y);
