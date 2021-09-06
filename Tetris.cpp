@@ -463,12 +463,12 @@ void rotateObj(TETRIS* tetris, bool right) {
 
 void moveObjToLR(TETRIS* tetris, bool direction) {
     OBJECT simulateObj = *(tetris->curObj);
-    if (direction) {
+    if (direction && simulateObj.posX > 0) {
         simulateObj.posX--;
         if (!isCollisionObjInHere(tetris, simulateObj))
             *(tetris->curObj) = simulateObj;
     }
-    else {
+    else if (!direction){
         simulateObj.posX++;
         if (!isCollisionObjInHere(tetris, simulateObj))
             *(tetris->curObj) = simulateObj;
