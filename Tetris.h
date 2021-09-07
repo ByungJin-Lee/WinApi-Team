@@ -37,7 +37,7 @@ typedef struct tagBLOCK{
 
 typedef struct tagOBJECT {
 	bool isExist;
-	char type;	
+	char type;		
 	short rot;
 	int posX;
 	int posY;
@@ -47,6 +47,8 @@ typedef struct tagTetris {
 	int blockSize;
 	int width;
 	int height;
+	int initX;
+	int initY;
 	int interval;
 	int end;
 	int score;
@@ -57,71 +59,87 @@ typedef struct tagTetris {
 } TETRIS;
 
 
-//게임판 생성
+//Create Tetris and reset member
 TETRIS* createTetris(int x, int y);
 
-//랜덤 객체 불러오기
-char getRndObj();
+//Free Tetris, Clear Memory
+void removeTetris(TETRIS*);
 
-//게임판 그리기
-void drawBoardOnText(TETRIS*);
+//Start Tetris
+void startTetris(TETRIS* tetris, void (*)(void*));
 
-//객체 그리기
-bool isObjBlockInHere(TETRIS*, int, int);
+//Thread - start running when tetris start
+void workTetris(void*);
 
-//객체 소환
-void summonObj(TETRIS*);
+//Check all line whether is full
+void checkLineIsFull(TETRIS*);
 
-//아래 충돌 판정
+//Destory Line
+void destoryLine(TETRIS*, int);
+
+//Pull line to down when destory line
+void pullLine(TETRIS*, int);
+
+//Check Death Condition
+bool checkEnd(TETRIS*);
+
+/* About Control Object */
+
+//Object rotate Left/Right
+void rotateObj(TETRIS* board, bool);
+
+//Object Control with Input Cmd - L(0) R(1) RL(2) RR(3)
+void moveObjWithInput(TETRIS*, short type);
+
+//Object Move L(T) R(F)
+void moveObjToLR(TETRIS*, bool);
+
+//Object move to Bottom
+void moveObjToBtm(TETRIS*);
+
+/* About Block Collision */
+
 bool isCollisionObjToBottom(TETRIS*);
 
 bool isCollisionObjInHere(TETRIS*, OBJECT);
 
-//게임판 제거
-void removeTetris(TETRIS*);
+bool isObjBlockInHere(TETRIS*, int, int);
 
-//현재 상태
-char* viewStatus(TETRIS* tetris, char*);
+//is there Block? then return block color(not -1)
+char isBlockInHere(TETRIS* tetris, int x, int y);
 
-//게임 시작
-void startTetrisOnText(TETRIS*, int);
+/* simulate Block */
 
-//게임 동작 쓰레드
-void workTetrisOnText(void*);
 
-void workTetris(void*);
 
-//Object 회전 Left Right
-void rotateObj(TETRIS* board, bool);
+/* About Object */
 
-//Object 회전 및 이동 0: left 1: right 2: rotate left 3: rotate right
-void moveObjWithInput(TETRIS*, short type);
-
-//Object 좌우 이동 true : 좌 right : 우
-void moveObjToLR(TETRIS*, bool);
-
-//Object를 바로 아래쪽으로 내림
-void moveObjToBtm(TETRIS*);
-
-//Object를 블럭으로 만듦
 void objToBlock(TETRIS*);
 
-//모든 줄을 검토함
-void reviewAllLine(TETRIS*);
+void summonObj(TETRIS*);
 
-//해당 줄을 삭제함
-void destoryLine(TETRIS*, int);
+char getRndObj(char);
 
-//해당 줄 위를 아래로 땡김
-void pullLine(TETRIS*, int);
+/* Tetris Control */
 
-//종료 조건을 판단함
-bool checkEnd(TETRIS*);
+void pause(TETRIS*);
 
-//테트리스를 시작함
-void startTetris(TETRIS* tetris, void (*)(void*));
+void flow(TETRIS*);
 
+void restart(TETRIS*);
+
+/* Tetris Information */
+
+char* viewStatus(TETRIS* tetris, char*);
+
+/* About Platform */
+
+//On Form
 void drawTetrisOnForm(TETRIS* tetris, HDC hdc);
 
-//블록이 있는지 판단, 있다면 색상 반환, 없으면 -1
-char isBlockInHere(TETRIS* tetris, int x, int y);
+//On Text
+void startTetrisOnText(TETRIS*, int);
+
+void drawBoardOnText(TETRIS*);
+
+void workTetrisOnText(void*);
